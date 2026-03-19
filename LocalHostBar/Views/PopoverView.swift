@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PopoverView: View {
     @EnvironmentObject private var service: ServerService
+    @StateObject private var launchAtLogin = LaunchAtLogin.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -132,11 +133,29 @@ struct PopoverView: View {
     }
 
     private var footer: some View {
-        HStack {
+        HStack(spacing: 10) {
             Text("\(service.servers.count) server\(service.servers.count == 1 ? "" : "s")")
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
+
             Spacer()
+
+            // Launch at login toggle
+            Button {
+                launchAtLogin.toggle()
+            } label: {
+                Image(systemName: launchAtLogin.isEnabled ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 12))
+                    .foregroundStyle(launchAtLogin.isEnabled ? Color.accentColor : .secondary)
+            }
+            .buttonStyle(.plain)
+            .help(launchAtLogin.isEnabled ? "Désactiver le lancement au démarrage" : "Lancer au démarrage")
+
+            Text("Startup")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .onTapGesture { launchAtLogin.toggle() }
+
             Button("Refresh") {
                 Task { await service.refresh() }
             }

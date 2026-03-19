@@ -21,6 +21,8 @@ targets:
         CODE_SIGNING_REQUIRED: "NO"
         CODE_SIGN_IDENTITY: ""
         ENABLE_HARDENED_RUNTIME: "NO"
+    dependencies:
+      - sdk: ServiceManagement.framework
     info:
       path: LocalHostBar/Info.plist
       properties:
