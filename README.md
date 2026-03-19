@@ -1,5 +1,7 @@
 # LocalHostBar 🖥️
 
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-🍺_Buy_me_a_beer-EA4AAA?style=flat&logo=github-sponsors)](https://github.com/sponsors/julienferla)
+
 > A macOS menu bar app that detects, monitors, and controls your local development servers — built for [Cursor](https://cursor.sh) developers.
 
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift 5.9](https://img.shields.io/badge/Swift-5.9-orange) ![License MIT](https://img.shields.io/badge/license-MIT-green)

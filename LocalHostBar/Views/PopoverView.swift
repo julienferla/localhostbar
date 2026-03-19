@@ -134,6 +134,16 @@ struct PopoverView: View {
 
     private var footer: some View {
         HStack(spacing: 10) {
+            // Buy me a beer 🍺
+            Button {
+                NSWorkspace.shared.open(URL(string: "https://github.com/sponsors/julienferla")!)
+            } label: {
+                Text("🍺")
+                    .font(.system(size: 13))
+            }
+            .buttonStyle(.plain)
+            .help("Buy me a beer")
+
             Text("\(service.servers.count) server\(service.servers.count == 1 ? "" : "s")")
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
