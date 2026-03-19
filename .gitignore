@@ -9,7 +9,7 @@ build/
 *.dSYM
 
 # XcodeGen (regenerated from project.yml)
-LocalHostBar.xcodeproj/
+*.xcodeproj/
 
 # macOS
 .DS_Store
