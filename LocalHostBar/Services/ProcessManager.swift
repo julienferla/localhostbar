@@ -65,6 +65,7 @@ enum ProcessManager {
         command: String? = nil,
         rawLaunchScript: String? = nil,
         autoPort: Bool = false,
+        autoRestart: Bool = false,
         occupiedPorts: Set<Int> = []
     ) {
         let safePath = path.replacingOccurrences(of: "'", with: "\\'")
@@ -88,6 +89,12 @@ enum ProcessManager {
                 }
             } else {
                 fullCmd = cmd
+            }
+
+            // Wrap in a while loop so the server restarts automatically in the same
+            // Terminal window if it crashes (Ctrl-C still exits cleanly).
+            if autoRestart {
+                fullCmd = "while true; do \(fullCmd); echo ''; echo '🔄 Redémarrage dans 3s... (Ctrl+C pour arrêter)'; sleep 3; done"
             }
 
             let safeCmd = fullCmd.replacingOccurrences(of: "\"", with: "\\\"")
@@ -114,7 +121,7 @@ enum ProcessManager {
     // MARK: - Restart
 
     /// Stops the server then opens a new Terminal window running its launch command.
-    static func restart(server: ServerInfo, occupiedPorts: Set<Int> = []) {
+    static func restart(server: ServerInfo, occupiedPorts: Set<Int> = [], autoRestart: Bool = false) {
         stop(pid: server.pid)
         guard let path = server.workingDirectory,
               let cmd = server.project?.launchCommand else { return }
@@ -127,6 +134,7 @@ enum ProcessManager {
                 command: cmd,
                 rawLaunchScript: server.project?.rawLaunchScript,
                 autoPort: true,
+                autoRestart: autoRestart,
                 occupiedPorts: ports
             )
         }

@@ -21,6 +21,22 @@ struct CursorProjectRowView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
+                // Auto-restart toggle
+                if project.launchCommand != nil {
+                    Button {
+                        service.toggleAutoRestart(path: project.path)
+                    } label: {
+                        Image(systemName: service.isAutoRestart(project.path)
+                              ? "arrow.clockwise.circle.fill"
+                              : "arrow.clockwise.circle")
+                            .font(.system(size: 11))
+                            .foregroundStyle(service.isAutoRestart(project.path) ? Color.green : .secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help(service.isAutoRestart(project.path)
+                          ? "Auto-restart ON — désactiver"
+                          : "Auto-restart OFF — activer")
+                }
                 // Pin button
                 Button {
                     service.togglePin(path: project.path)
@@ -53,13 +69,14 @@ struct CursorProjectRowView: View {
                     systemImage: "play.fill",
                     tint: .green
                 ) {
-                    // Pass currently occupied ports so the free-port search skips them instantly.
                     let occupied = Set(service.servers.map(\.port))
+                    let ar = service.isAutoRestart(project.path)
                     ProcessManager.openTerminal(
                         at: project.path,
                         command: cmd,
                         rawLaunchScript: rawScript,
                         autoPort: cmd != nil,
+                        autoRestart: ar,
                         occupiedPorts: occupied
                     )
                 }
@@ -72,6 +89,7 @@ struct CursorProjectRowView: View {
                     tint: .accentColor
                 ) {
                     let occupied = Set(service.servers.map(\.port))
+                    let ar = service.isAutoRestart(project.path)
                     ProcessManager.openInCursor(path: project.path)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         ProcessManager.openTerminal(
@@ -79,6 +97,7 @@ struct CursorProjectRowView: View {
                             command: cmd,
                             rawLaunchScript: rawScript,
                             autoPort: cmd != nil,
+                            autoRestart: ar,
                             occupiedPorts: occupied
                         )
                     }

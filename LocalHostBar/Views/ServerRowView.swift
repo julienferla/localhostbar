@@ -8,6 +8,8 @@ struct ServerRowView: View {
 
     private var path: String? { server.workingDirectory }
     private var pinned: Bool { path.map { service.isPinned($0) } ?? false }
+    private var autoRestart: Bool { path.map { service.isAutoRestart($0) } ?? false }
+    private var hasLaunchCmd: Bool { server.project?.launchCommand != nil }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -23,6 +25,20 @@ struct ServerRowView: View {
                         .lineLimit(1)
                 }
                 Spacer()
+                // Auto-restart toggle (only when a launch command is known)
+                if let p = path, hasLaunchCmd {
+                    Button {
+                        service.toggleAutoRestart(path: p)
+                    } label: {
+                        Image(systemName: autoRestart
+                              ? "arrow.clockwise.circle.fill"
+                              : "arrow.clockwise.circle")
+                            .font(.system(size: 11))
+                            .foregroundStyle(autoRestart ? Color.green : .secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help(autoRestart ? "Auto-restart ON — désactiver" : "Auto-restart OFF — activer")
+                }
                 // Pin button
                 if let p = path {
                     Button {

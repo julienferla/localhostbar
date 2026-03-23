@@ -8,6 +8,7 @@ final class ServerService: ObservableObject {
     @Published private(set) var cursorProjects: [CursorProject] = []
     @Published private(set) var isScanning = false
     @Published private(set) var pinnedPaths: Set<String> = []
+    @Published private(set) var autoRestartPaths: Set<String> = []
 
     private var timer: DispatchSourceTimer?
     private let scanQueue = DispatchQueue(label: "com.localhostbar.scanner", qos: .utility)
@@ -15,12 +16,14 @@ final class ServerService: ObservableObject {
     /// PIDs seen in the previous scan cycle — used to diff starts/stops for notifications.
     private var previousPIDs: Set<Int> = []
 
-    private let historyKey  = "com.localhostbar.recentServers"
-    private let pinnedKey   = "com.localhostbar.pinnedPaths"
+    private let historyKey      = "com.localhostbar.recentServers"
+    private let pinnedKey       = "com.localhostbar.pinnedPaths"
+    private let autoRestartKey  = "com.localhostbar.autoRestartPaths"
 
     init() {
         loadHistory()
         loadPinned()
+        loadAutoRestart()
         NotificationManager.requestAuthorization()
         startPolling()
     }
@@ -62,9 +65,23 @@ final class ServerService: ObservableObject {
 
     func restart(server: ServerInfo) {
         let occupied = Set(servers.map(\.port))
-        ProcessManager.restart(server: server, occupiedPorts: occupied)
+        let ar = server.workingDirectory.map { isAutoRestart($0) } ?? false
+        ProcessManager.restart(server: server, occupiedPorts: occupied, autoRestart: ar)
         // The polling cycle will pick up the new process automatically
     }
+
+    // MARK: - Auto-restart
+
+    func toggleAutoRestart(path: String) {
+        if autoRestartPaths.contains(path) {
+            autoRestartPaths.remove(path)
+        } else {
+            autoRestartPaths.insert(path)
+        }
+        saveAutoRestart()
+    }
+
+    func isAutoRestart(_ path: String) -> Bool { autoRestartPaths.contains(path) }
 
     func refresh() async {
         await performScan()
@@ -170,6 +187,17 @@ final class ServerService: ObservableObject {
             if pa != pb { return pa }
             return false
         }
+    }
+
+    // MARK: - Auto-restart persistence
+
+    private func loadAutoRestart() {
+        let saved = UserDefaults.standard.stringArray(forKey: autoRestartKey) ?? []
+        autoRestartPaths = Set(saved)
+    }
+
+    private func saveAutoRestart() {
+        UserDefaults.standard.set(Array(autoRestartPaths), forKey: autoRestartKey)
     }
 
     // MARK: - Pinned persistence
