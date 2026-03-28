@@ -104,6 +104,8 @@ enum PortScanner {
             "Spotify", "Messages", "Mail", "FaceTime",
             // Design tools
             "figma",
+            // App subscription helpers (local IPC, not dev servers)
+            "SetappAgent", "Setapp", "SetappAge",
             // Dev tools (not servers)
             "Xcode", "xcodebuild",
             // macOS system processes
