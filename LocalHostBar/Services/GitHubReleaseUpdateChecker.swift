@@ -1,5 +1,31 @@
 import Foundation
 
+/// User-facing failure when the GitHub Releases API does not return a usable latest release.
+enum GitHubReleaseUpdateError: LocalizedError {
+    /// `GET .../releases/latest` returns 404 when the repo has no published releases yet.
+    case noPublishedReleases
+    case rateLimited
+    case httpFailure(statusCode: Int)
+    case invalidPayload
+
+    var errorDescription: String? {
+        switch self {
+        case .noPublishedReleases:
+            return """
+            Aucune release publiée sur GitHub pour ce projet. \
+            Créez une release avec un tag de version (ex. v1.0.0) sur le dépôt, \
+            puis réessayez.
+            """
+        case .rateLimited:
+            return "Limite d’appels GitHub atteinte. Réessayez dans une heure ou ouvrez la page des releases dans le navigateur."
+        case .httpFailure(let code):
+            return "Réponse GitHub inattendue (code \(code)). Réessayez plus tard."
+        case .invalidPayload:
+            return "Réponse GitHub illisible. Réessayez plus tard."
+        }
+    }
+}
+
 /// Compares the running app version to the latest GitHub Release (public API, no token).
 /// Stays 100% open source: opens the release page in the browser for manual download.
 enum GitHubReleaseUpdateChecker {
@@ -81,14 +107,26 @@ enum GitHubReleaseUpdateChecker {
         )
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else {
-            throw URLError(.badServerResponse)
+            throw GitHubReleaseUpdateError.invalidPayload
         }
-        guard (200...299).contains(http.statusCode) else {
-            throw URLError(.badServerResponse)
+        switch http.statusCode {
+        case 200...299:
+            break
+        case 404:
+            throw GitHubReleaseUpdateError.noPublishedReleases
+        case 403:
+            throw GitHubReleaseUpdateError.rateLimited
+        default:
+            throw GitHubReleaseUpdateError.httpFailure(statusCode: http.statusCode)
         }
-        let decoded = try JSONDecoder().decode(APIResponse.self, from: data)
+        let decoded: APIResponse
+        do {
+            decoded = try JSONDecoder().decode(APIResponse.self, from: data)
+        } catch {
+            throw GitHubReleaseUpdateError.invalidPayload
+        }
         guard let pageURL = URL(string: decoded.htmlUrl) else {
-            throw URLError(.badURL)
+            throw GitHubReleaseUpdateError.invalidPayload
         }
         let normalized = normalizeVersion(from: decoded.tagName)
         return LatestRelease(version: normalized, tagName: decoded.tagName, releasePageURL: pageURL)
