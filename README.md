@@ -51,9 +51,10 @@ The app checks the [latest GitHub Release](https://github.com/julienferla/localh
 
 **Maintainers — keep versions in sync**
 
-1. Bump **`MARKETING_VERSION`** / **`CFBundleShortVersionString`** in Xcode (or `MARKETING_VERSION` in `project.yml` before `xcodegen`).
+1. Bump **`MARKETING_VERSION`** / **`CURRENT_PROJECT_VERSION`** in `project.yml`, and align **`CFBundleShortVersionString`** / **`CFBundleVersion`** in `project.yml` → `info.properties` and `LocalHostBar/Info.plist`. Run `xcodegen generate`.
 2. Create a GitHub Release whose **tag** matches that version. A leading `v` is fine (e.g. app `1.2.0` ↔ tag `v1.2.0` or `1.2.0`). The checker compares numeric segments after stripping a leading `v`.
-3. Attach your **.dmg** / **.zip** (or whatever you ship) to the release as usual.
+3. **DMG on publish**: when you **publish** a release, the workflow [`.github/workflows/release-dmg.yml`](.github/workflows/release-dmg.yml) builds on `macos-14` and uploads **`LocalHostBar-<version>.dmg`** to that release (tag `v1.2.0` → file `LocalHostBar-1.2.0.dmg`). No manual upload needed if CI succeeds.
+4. **Local build**: `make dmg` (requires Xcode + XcodeGen) writes `dist/LocalHostBar-<marketing-version>.dmg` for manual upload or testing.
 
 If the tag version is greater than the running app’s marketing version, users see an update prompt.
 

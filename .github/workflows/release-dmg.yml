@@ -1,0 +1,32 @@
+name: Release — DMG
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  attach-dmg:
+    runs-on: macos-14
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Build DMG
+        env:
+          GITHUB_REF_NAME: ${{ github.event.release.tag_name }}
+        run: |
+          chmod +x scripts/make-dmg.sh
+          ./scripts/make-dmg.sh "${{ github.event.release.tag_name }}"
+
+      - name: Upload DMG to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          VER="${TAG#v}"
+          gh release upload "$TAG" "dist/LocalHostBar-${VER}.dmg" --clobber

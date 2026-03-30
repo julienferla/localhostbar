@@ -29,8 +29,8 @@ targets:
       properties:
         LSUIElement: true
         NSAppleEventsUsageDescription: "LocalHostBar uses Apple Events to open Terminal in your project directory."
-        CFBundleVersion: "2"
-        CFBundleShortVersionString: "1.0.1"
+        CFBundleVersion: "3"
+        CFBundleShortVersionString: "1.0.2"
         CFBundleName: LocalHostBar
         CFBundleDisplayName: LocalHostBar
         NSUserNotificationAlertStyle: alert
