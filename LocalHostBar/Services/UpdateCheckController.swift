@@ -2,14 +2,28 @@ import AppKit
 import Combine
 import Foundation
 
+/// Shown inside the menu bar window (not a system alert) so dismissing it does not close the window.
+struct UpdateStatusBanner: Equatable {
+    enum Kind: Equatable {
+        case upToDate
+        case checkFailed
+    }
+
+    let kind: Kind
+    let message: String
+}
+
 @MainActor
 final class UpdateCheckController: ObservableObject {
     @Published private(set) var updateAvailable: GitHubReleaseUpdateChecker.LatestRelease?
     @Published var showUpdateAlert = false
-    @Published var showUpToDateAlert = false
-    @Published var showCheckFailedAlert = false
+    @Published var statusBanner: UpdateStatusBanner?
     @Published private(set) var lastErrorMessage: String?
     @Published private(set) var isChecking = false
+
+    func dismissStatusBanner() {
+        statusBanner = nil
+    }
 
     private var didRunSessionAutoCheck = false
 
@@ -66,12 +80,15 @@ final class UpdateCheckController: ObservableObject {
                 updateAvailable = latest
                 showUpdateAlert = true
             } else if manual {
-                showUpToDateAlert = true
+                statusBanner = UpdateStatusBanner(
+                    kind: .upToDate,
+                    message: "Vous utilisez la dernière version : \(current)."
+                )
             }
         } catch {
             lastErrorMessage = error.localizedDescription
-            if manual {
-                showCheckFailedAlert = true
+            if manual, let msg = lastErrorMessage {
+                statusBanner = UpdateStatusBanner(kind: .checkFailed, message: msg)
             }
         }
     }

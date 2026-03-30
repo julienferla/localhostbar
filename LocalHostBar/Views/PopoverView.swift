@@ -31,16 +31,6 @@ struct PopoverView: View {
                 )
             }
         }
-        .alert("À jour", isPresented: $updateCheck.showUpToDateAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Vous utilisez la dernière version publiée sur GitHub.")
-        }
-        .alert("Vérification impossible", isPresented: $updateCheck.showCheckFailedAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(updateCheck.lastErrorMessage ?? "Erreur inconnue.")
-        }
     }
 
     // MARK: - Sections
@@ -161,6 +151,38 @@ struct PopoverView: View {
     }
 
     private var footer: some View {
+        VStack(spacing: 0) {
+            if let banner = updateCheck.statusBanner {
+                updateStatusBanner(banner)
+                Divider()
+            }
+            footerToolbar
+        }
+    }
+
+    private func updateStatusBanner(_ banner: UpdateStatusBanner) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: banner.kind == .checkFailed ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                .foregroundStyle(banner.kind == .checkFailed ? Color.orange : Color.green)
+                .font(.system(size: 13))
+            VStack(alignment: .leading, spacing: 8) {
+                Text(banner.message)
+                    .font(.system(size: 12))
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("OK") {
+                    updateCheck.dismissStatusBanner()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color(nsColor: .quaternaryLabelColor).opacity(0.15))
+    }
+
+    private var footerToolbar: some View {
         HStack(spacing: 10) {
             // Buy me a beer 🍺
             Text("🍺")
@@ -193,7 +215,10 @@ struct PopoverView: View {
                 .onTapGesture { launchAtLogin.toggle() }
 
             Button {
-                Task { await updateCheck.checkForUpdatesManual() }
+                // Defer so the menu bar window does not dismiss with the button action.
+                DispatchQueue.main.async {
+                    Task { await updateCheck.checkForUpdatesManual() }
+                }
             } label: {
                 if updateCheck.isChecking {
                     ProgressView()
