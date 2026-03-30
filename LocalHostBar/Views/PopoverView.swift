@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PopoverView: View {
     @EnvironmentObject private var service: ServerService
+    @EnvironmentObject private var updateCheck: UpdateCheckController
     @StateObject private var launchAtLogin = LaunchAtLogin.shared
 
     var body: some View {
@@ -13,6 +14,33 @@ struct PopoverView: View {
             footer
         }
         .frame(width: 340)
+        .task {
+            await updateCheck.performSessionAutoCheckIfNeeded()
+        }
+        .alert("Mise à jour disponible", isPresented: $updateCheck.showUpdateAlert) {
+            Button("Télécharger sur GitHub") {
+                updateCheck.openReleaseAndDismiss()
+            }
+            Button("Plus tard", role: .cancel) {
+                updateCheck.remindLater()
+            }
+        } message: {
+            if let u = updateCheck.updateAvailable {
+                Text(
+                    "La version \(u.version) est disponible sur GitHub. Vous utilisez la version \(GitHubReleaseUpdateChecker.currentAppVersion)."
+                )
+            }
+        }
+        .alert("À jour", isPresented: $updateCheck.showUpToDateAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Vous utilisez la dernière version publiée sur GitHub.")
+        }
+        .alert("Vérification impossible", isPresented: $updateCheck.showCheckFailedAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(updateCheck.lastErrorMessage ?? "Erreur inconnue.")
+        }
     }
 
     // MARK: - Sections
@@ -163,6 +191,22 @@ struct PopoverView: View {
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
                 .onTapGesture { launchAtLogin.toggle() }
+
+            Button {
+                Task { await updateCheck.checkForUpdatesManual() }
+            } label: {
+                if updateCheck.isChecking {
+                    ProgressView()
+                        .scaleEffect(0.45)
+                        .frame(width: 14, height: 14)
+                } else {
+                    Image(systemName: "arrow.down.circle")
+                        .font(.system(size: 12))
+                }
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.accentColor)
+            .help("Vérifier les mises à jour sur GitHub")
 
             Button("Refresh") {
                 Task { await service.refresh() }

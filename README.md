@@ -42,6 +42,21 @@ make open
 
 Then build and run with **⌘R** in Xcode.
 
+## Updates (GitHub Releases)
+
+The app checks the [latest GitHub Release](https://github.com/julienferla/localhostbar/releases/latest) using the public API (no account or token). It stays **open source and free**: it only **notifies** you and opens the release page in the browser so you can **download and install** the new build yourself.
+
+- **Automatic check**: at most once per app session, and only if the last check was more than **24 hours** ago.
+- **Manual check**: use the download-circle button in the popover footer.
+
+**Maintainers — keep versions in sync**
+
+1. Bump **`MARKETING_VERSION`** / **`CFBundleShortVersionString`** in Xcode (or `MARKETING_VERSION` in `project.yml` before `xcodegen`).
+2. Create a GitHub Release whose **tag** matches that version. A leading `v` is fine (e.g. app `1.2.0` ↔ tag `v1.2.0` or `1.2.0`). The checker compares numeric segments after stripping a leading `v`.
+3. Attach your **.dmg** / **.zip** (or whatever you ship) to the release as usual.
+
+If the tag version is greater than the running app’s marketing version, users see an update prompt.
+
 ## Project Structure
 
 ```
@@ -58,6 +73,8 @@ LocalHostBar/
 │   ├── ProcessManager.swift      # kill, open browser, Cursor, Terminal, port logic
 │   ├── CursorDetector.swift      # Reads Cursor's storage.json for open projects
 │   ├── NotificationManager.swift # UserNotifications integration
+│   ├── GitHubReleaseUpdateChecker.swift  # Latest release vs app version (GitHub API)
+│   ├── UpdateCheckController.swift       # Update alerts & session / manual checks
 │   └── ServerService.swift       # Polling orchestrator (@MainActor ObservableObject)
 └── Views/
     ├── PopoverView.swift          # Main popover layout
