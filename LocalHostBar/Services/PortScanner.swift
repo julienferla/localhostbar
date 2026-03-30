@@ -108,6 +108,8 @@ enum PortScanner {
             "SetappAgent", "Setapp", "SetappAge",
             // Dev tools (not servers)
             "Xcode", "xcodebuild",
+            // Cursor — extension host / MCP / internal listener (e.g. port 36240), not a dev server
+            "Cursor",
             // macOS system processes
             "com.apple", "launchd", "rapportd",
             "ControlCenter", "Finder", "Dock", "WindowServer",
