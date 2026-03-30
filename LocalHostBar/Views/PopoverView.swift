@@ -52,12 +52,16 @@ struct PopoverView: View {
 
     @ViewBuilder
     private var content: some View {
+        // MenuBarExtra + .window: ScrollView often gets zero proposed height, so the list
+        // vanishes while header/footer still lay out. minHeight reserves space; inner
+        // frame(maxWidth: .infinity) helps the scroll content measure correctly.
         ScrollView {
             VStack(spacing: 0) {
 
                 // ── Active servers ────────────────────────────────────────
+                // Use VStack (not LazyVStack): LazyVStack can report zero height here.
                 if !service.servers.isEmpty {
-                    LazyVStack(spacing: 6) {
+                    VStack(spacing: 6) {
                         ForEach(service.servers) { server in
                             ServerRowView(server: server,
                                           onStop: { service.stop(server: server) },
@@ -83,8 +87,10 @@ struct PopoverView: View {
                     }
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .top)
         }
-        .frame(maxHeight: 460)
+        .frame(minHeight: 260, idealHeight: 360, maxHeight: 460)
+        .layoutPriority(1)
     }
 
     private var emptyMessage: some View {
