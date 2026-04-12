@@ -138,16 +138,10 @@ struct PopoverView: View {
 
             ForEach(service.recentServers.prefix(5)) { recent in
                 HStack(spacing: 8) {
-                    Text(recent.framework)
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 52, alignment: .leading)
                     Text(recent.name)
-                        .font(.system(size: 12))
+                        .font(.system(size: 12, weight: .medium))
+                        .lineLimit(1)
                     Spacer()
-                    Text(String(format: ":%d", recent.port))
-                        .font(.system(size: 11).monospacedDigit())
-                        .foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 3)

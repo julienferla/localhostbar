@@ -17,27 +17,9 @@ enum ProjectDetector {
     // MARK: - Private
 
     private static func detectName(at url: URL, fm: FileManager) -> String {
-        // Try package.json first
-        let packageURL = url.appendingPathComponent("package.json")
-        if let data = try? Data(contentsOf: packageURL),
-           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let name = json["name"] as? String,
-           !name.isEmpty {
-            return name
-        }
-
-        // Try composer.json (PHP/Laravel)
-        let composerURL = url.appendingPathComponent("composer.json")
-        if let data = try? Data(contentsOf: composerURL),
-           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let name = json["name"] as? String,
-           !name.isEmpty {
-            let parts = name.split(separator: "/")
-            return String(parts.last ?? Substring(name))
-        }
-
-        // Fallback to directory name
-        return url.lastPathComponent
+        // Always use the project folder name (matches Finder / Cursor tab),
+        // not package.json "name" or composer vendor/package (often generic).
+        url.lastPathComponent
     }
 
     private static func detectFramework(at url: URL, fm: FileManager) -> ProjectInfo.Framework {

@@ -60,22 +60,27 @@ enum ProcessManager {
     /// 2. Otherwise, prepend `PORT=xxxx` to the npm wrapper command (works for most frameworks).
     ///
     /// Pass `occupiedPorts` (ports currently used by running servers) for reliable port selection.
+    /// Pass `framework` when `autoPort` is false so auto-restart can wait on the correct default port.
     static func openTerminal(
         at path: String,
         command: String? = nil,
         rawLaunchScript: String? = nil,
         autoPort: Bool = false,
         autoRestart: Bool = false,
-        occupiedPorts: Set<Int> = []
+        occupiedPorts: Set<Int> = [],
+        framework: ProjectInfo.Framework? = nil
     ) {
         let safePath = path.replacingOccurrences(of: "'", with: "\\'")
         var cd = "cd '\(safePath)'"
 
         if let cmd = command {
             var fullCmd: String
+            /// Port the dev server is expected to bind (for pre-launch wait when auto-restarting).
+            let effectiveListenPort: Int
 
             if autoPort {
                 let port = findFreePort(excluding: occupiedPorts)
+                effectiveListenPort = port
 
                 // Try to patch the hardcoded port flag inside the raw script first.
                 if let raw = rawLaunchScript,
@@ -89,12 +94,18 @@ enum ProcessManager {
                 }
             } else {
                 fullCmd = cmd
+                effectiveListenPort = explicitPort(in: rawLaunchScript)
+                    ?? framework?.typicalDevServerPort
+                    ?? 3000
             }
 
             // Wrap in a while loop so the server restarts automatically in the same
             // Terminal window if it crashes (Ctrl-C still exits cleanly).
             if autoRestart {
-                fullCmd = "while true; do \(fullCmd); echo ''; echo '🔄 Redémarrage dans 3s... (Ctrl+C pour arrêter)'; sleep 3; done"
+                // Avoid EADDRINUSE: wait until the previous process has released the socket
+                // (Node/Next can take >3s to tear down after a crash).
+                let wait = bashWaitUntilPortFree(port: effectiveListenPort)
+                fullCmd = "while true; do \(wait); \(fullCmd); echo ''; echo '🔄 Redémarrage dans 3s... (Ctrl+C pour arrêter)'; sleep 3; done"
             }
 
             let safeCmd = fullCmd.replacingOccurrences(of: "\"", with: "\\\"")
@@ -120,24 +131,80 @@ enum ProcessManager {
 
     // MARK: - Restart
 
-    /// Stops the server then opens a new Terminal window running its launch command.
+    /// Stops the server, frees the listen port, closes **all** Terminal.app windows, then opens one fresh window.
+    /// Fermer toutes les fenêtres évite les boucles `while true` orphelines et les conflits de port ; tout autre travail ouvert dans Terminal est perdu.
     static func restart(server: ServerInfo, occupiedPorts: Set<Int> = [], autoRestart: Bool = false) {
         stop(pid: server.pid)
+        killListeners(on: server.port)
+        closeAllTerminalWindows()
+
         guard let path = server.workingDirectory,
               let cmd = server.project?.launchCommand else { return }
         // Remove the restarted server's own port so it can reclaim it after stopping.
         var ports = occupiedPorts
         ports.remove(server.port)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             openTerminal(
                 at: path,
                 command: cmd,
                 rawLaunchScript: server.project?.rawLaunchScript,
                 autoPort: true,
                 autoRestart: autoRestart,
-                occupiedPorts: ports
+                occupiedPorts: ports,
+                framework: server.project?.framework
             )
         }
+    }
+
+    /// Sends SIGKILL to any process still in TCP LISTEN on `port` (ex. Node orbeline après crash).
+    private static func killListeners(on port: Int) {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/bash")
+        p.arguments = [
+            "-c",
+            "lsof -tiTCP:\(port) -sTCP:LISTEN 2>/dev/null | xargs kill -9 2>/dev/null; true"
+        ]
+        p.standardOutput = Pipe()
+        p.standardError = Pipe()
+        try? p.run()
+        p.waitUntilExit()
+    }
+
+    /// Ferme toutes les fenêtres de Terminal.app sans enregistrer (`saving no`).
+    private static func closeAllTerminalWindows() {
+        let script = """
+        tell application "Terminal"
+            repeat while (count of windows) > 0
+                try
+                    close front window saving no
+                on error
+                    exit repeat
+                end try
+            end repeat
+        end tell
+        """
+        var error: NSDictionary?
+        if let appleScript = NSAppleScript(source: script) {
+            appleScript.executeAndReturnError(&error)
+        }
+    }
+
+    // MARK: - Auto-restart / port wait (bash)
+
+    /// Bash snippet: block until nothing is listening on `port` (max ~30s), then continue.
+    /// Prevents `EADDRINUSE` when the prior dev server has not finished releasing the socket.
+    private static func bashWaitUntilPortFree(port: Int) -> String {
+        "LHB_P=\(port); for __lhb in $(seq 1 30); do lsof -iTCP:$LHB_P -sTCP:LISTEN -P -n >/dev/null 2>&1 || break; sleep 1; done"
+    }
+
+    /// Parses `-p N` or `--port N` from an npm script line, if present.
+    private static func explicitPort(in script: String?) -> Int? {
+        guard let script = script else { return nil }
+        let pattern = #"(?:-p|--port)\s+(\d+)"#
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: script, range: NSRange(script.startIndex..., in: script)),
+              let range = Range(match.range(at: 1), in: script) else { return nil }
+        return Int(script[range])
     }
 
     // MARK: - Port-flag replacement

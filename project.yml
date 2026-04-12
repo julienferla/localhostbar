@@ -13,8 +13,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.localhostbar.app
-        MARKETING_VERSION: "1.0.2"
-        CURRENT_PROJECT_VERSION: 3
+        MARKETING_VERSION: "1.0.3"
+        CURRENT_PROJECT_VERSION: 4
         SWIFT_VERSION: "5.9"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         CODE_SIGN_STYLE: Manual
@@ -29,8 +29,8 @@ targets:
       properties:
         LSUIElement: true
         NSAppleEventsUsageDescription: "LocalHostBar uses Apple Events to open Terminal in your project directory."
-        CFBundleVersion: "3"
-        CFBundleShortVersionString: "1.0.2"
+        CFBundleVersion: "4"
+        CFBundleShortVersionString: "1.0.3"
         CFBundleName: LocalHostBar
         CFBundleDisplayName: LocalHostBar
         NSUserNotificationAlertStyle: alert

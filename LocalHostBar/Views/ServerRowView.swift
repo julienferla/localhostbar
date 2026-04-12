@@ -51,7 +51,6 @@ struct ServerRowView: View {
                     .buttonStyle(.plain)
                     .help(pinned ? "Désépingler" : "Épingler en tête de liste")
                 }
-                portBadge
             }
 
             HStack(spacing: 5) {
@@ -87,16 +86,6 @@ struct ServerRowView: View {
             .padding(.top, 3)
     }
 
-    private var portBadge: some View {
-        Text(String(format: ":%d", server.port))
-            .font(.system(size: 11, weight: .medium, design: .monospaced))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(Color.accentColor.opacity(0.15))
-            .foregroundStyle(Color.accentColor)
-            .cornerRadius(4)
-    }
-
     private var rowBackground: Color {
         server.status == .conflict ? Color.orange.opacity(0.07) : Color.primary.opacity(0.04)
     }
@@ -112,9 +101,6 @@ struct ServerRowView: View {
 
     private var subtitle: String {
         var parts: [String] = []
-        if let project = server.project {
-            parts.append(project.framework.rawValue)
-        }
         if let cmd = server.project?.launchCommand {
             parts.append(cmd)
         }

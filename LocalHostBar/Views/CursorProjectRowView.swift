@@ -16,9 +16,12 @@ struct CursorProjectRowView: View {
                     Text(project.name)
                         .font(.system(size: 12, weight: .semibold))
                         .lineLimit(1)
-                    Text(project.framework.rawValue)
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
+                    if let cmd = project.launchCommand {
+                        Text(cmd)
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
                 Spacer()
                 // Auto-restart toggle
@@ -77,7 +80,8 @@ struct CursorProjectRowView: View {
                         rawLaunchScript: rawScript,
                         autoPort: cmd != nil,
                         autoRestart: ar,
-                        occupiedPorts: occupied
+                        occupiedPorts: occupied,
+                        framework: project.framework
                     )
                 }
                 .help(cmd.map { "Run: \($0) (port auto-selected)" } ?? "Open terminal in project")
@@ -98,7 +102,8 @@ struct CursorProjectRowView: View {
                             rawLaunchScript: rawScript,
                             autoPort: cmd != nil,
                             autoRestart: ar,
-                            occupiedPorts: occupied
+                            occupiedPorts: occupied,
+                            framework: project.framework
                         )
                     }
                 }

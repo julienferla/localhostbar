@@ -22,6 +22,17 @@ struct ProjectInfo: Equatable {
         case flask    = "Flask"
         case unknown  = "Dev Server"
 
+        /// Default listen port when the dev script does not specify `-p` / `--port` (used for auto-restart wait).
+        var typicalDevServerPort: Int {
+            switch self {
+            case .nextjs, .nuxt, .react, .rails, .express: return 3000
+            case .vite, .vue: return 5173
+            case .laravel, .django: return 8000
+            case .flask: return 5000
+            case .unknown: return 3000
+            }
+        }
+
         var emoji: String {
             switch self {
             case .nextjs:  return "▲"
