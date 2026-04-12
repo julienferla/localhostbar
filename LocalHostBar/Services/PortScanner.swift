@@ -93,6 +93,12 @@ enum PortScanner {
     }
 
     private static func isKnownNonServer(command: String) -> Bool {
+        let lower = command.lowercased()
+        // Android Debug Bridge — listens on localhost (e.g. 5037); not a browser dev server
+        if lower == "adb" || lower.hasSuffix("/adb") || lower == "adb.bin" || lower.hasSuffix("/adb.bin") {
+            return true
+        }
+
         let blocked = [
             // Browsers
             "firefox", "Google Chrome", "Chrome Helper", "Safari",
@@ -114,12 +120,16 @@ enum PortScanner {
             "com.apple", "launchd", "rapportd",
             "ControlCenter", "Finder", "Dock", "WindowServer",
         ]
-        let lower = command.lowercased()
         return blocked.contains { b in
             let bl = b.lowercased()
-            // Normal match: command contains blocked term
-            // Reverse match: blocked term starts with command (handles lsof truncation, e.g. "ControlCe" → "ControlCenter")
-            return lower.contains(bl) || bl.hasPrefix(lower)
+            // Normal match: command name contains blocked term (e.g. "Google Chrome Helper")
+            if lower.contains(bl) { return true }
+            // Reverse match: blocked name starts with command — intended for lsof-truncated
+            // process names (e.g. "ControlCe" vs "ControlCenter"). Must require a minimum
+            // command length: short names like "go" would otherwise match "google chrome"
+            // ("google chrome".hasPrefix("go")), hiding all Go dev servers from the list.
+            if lower.count >= 4, bl.hasPrefix(lower) { return true }
+            return false
         }
     }
 
