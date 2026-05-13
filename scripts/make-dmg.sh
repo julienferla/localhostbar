@@ -27,6 +27,11 @@ if ! command -v xcodegen &>/dev/null; then
   exit 1
 fi
 
+if ! command -v create-dmg &>/dev/null; then
+  echo "Install create-dmg: brew install create-dmg" >&2
+  exit 1
+fi
+
 echo "==> XcodeGen"
 xcodegen generate
 
@@ -59,13 +64,21 @@ ditto "$APP" "$STAGE/LocalHostBar.app"
 
 DMG="$ROOT/dist/LocalHostBar-${VERSION}.dmg"
 rm -f "$DMG"
-echo "==> hdiutil -> $DMG"
-hdiutil create \
-  -volname "LocalHostBar ${VERSION}" \
-  -srcfolder "$STAGE" \
-  -ov \
-  -format UDZO \
-  "$DMG"
+echo "==> create-dmg -> $DMG"
+
+# Drag-to-install layout: app icon on the left, Applications symlink on the right.
+# Window size 540x360 chosen to fit both icons (100px) with comfortable spacing.
+create-dmg \
+  --volname "LocalHostBar ${VERSION}" \
+  --window-pos 200 120 \
+  --window-size 540 360 \
+  --icon-size 100 \
+  --icon "LocalHostBar.app" 140 180 \
+  --app-drop-link 400 180 \
+  --no-internet-enable \
+  --hdiutil-quiet \
+  "$DMG" \
+  "$STAGE"
 
 echo "Created: $DMG"
 ls -la "$DMG"
