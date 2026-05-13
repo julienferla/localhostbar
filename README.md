@@ -6,6 +6,8 @@
 
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift 5.9](https://img.shields.io/badge/Swift-5.9-orange) ![License MIT](https://img.shields.io/badge/license-MIT-green)
 
+![LocalHostBar in action](docs/hero.png)
+
 ## Features
 
 - **Auto-detect** all localhost servers running on your machine (Next.js, Vite, Nuxt, Laravel, Rails, Django, Flask, Express, Vue, React…)
