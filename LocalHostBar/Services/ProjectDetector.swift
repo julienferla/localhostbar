@@ -17,9 +17,46 @@ enum ProjectDetector {
     // MARK: - Private
 
     private static func detectName(at url: URL, fm: FileManager) -> String {
-        // Always use the project folder name (matches Finder / Cursor tab),
-        // not package.json "name" or composer vendor/package (often generic).
-        url.lastPathComponent
+        // Resolve to the canonical project path. Claude Code worktrees live at
+        // `<project>/.claude/worktrees/<slug>[/subpath]`, and lsof reports the
+        // worktree path as cwd — without stripping, the displayed name becomes
+        // the worktree slug ("distracted-road-412d36") instead of the project.
+        let canonical = canonicalProjectURL(url)
+        let last = canonical.lastPathComponent
+
+        // Monorepo subfolders ("frontend", "backend", …) carry no identifying
+        // info on their own. Prepend the parent so the row reads "myrepo/frontend".
+        let generic: Set<String> = [
+            "frontend", "backend", "api", "web", "app", "apps",
+            "client", "server", "src", "packages", "site", "www",
+        ]
+        if generic.contains(last.lowercased()) {
+            let parent = canonical.deletingLastPathComponent().lastPathComponent
+            if !parent.isEmpty && parent != "/" {
+                return "\(parent)/\(last)"
+            }
+        }
+
+        return last
+    }
+
+    /// Strips a `.claude/worktrees/<slug>` segment from the path so the displayed
+    /// name reflects the real project, not the throwaway worktree slug. Any subpath
+    /// after the slug is preserved (e.g. `<project>/.claude/worktrees/X/frontend`
+    /// → `<project>/frontend`).
+    private static func canonicalProjectURL(_ url: URL) -> URL {
+        let path = url.path
+        guard let range = path.range(of: "/.claude/worktrees/") else { return url }
+
+        let beforeClaude = String(path[..<range.lowerBound])
+        let afterClaude  = String(path[range.upperBound...])
+        let subpath = afterClaude
+            .components(separatedBy: "/")
+            .dropFirst()   // drop the worktree slug itself
+            .joined(separator: "/")
+
+        let resolved = subpath.isEmpty ? beforeClaude : "\(beforeClaude)/\(subpath)"
+        return URL(fileURLWithPath: resolved)
     }
 
     private static func detectFramework(at url: URL, fm: FileManager) -> ProjectInfo.Framework {
