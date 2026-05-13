@@ -70,8 +70,9 @@ enum ProcessManager {
         occupiedPorts: Set<Int> = [],
         framework: ProjectInfo.Framework? = nil
     ) {
-        let safePath = path.replacingOccurrences(of: "'", with: "\\'")
-        var cd = "cd '\(safePath)'"
+        // Bash-quote the path so a single quote, double quote, $, backslash, etc. in
+        // the project path cannot break out of the `cd` and inject shell commands.
+        var bashCmd = "cd \(bashSingleQuote(path))"
 
         if let cmd = command {
             var fullCmd: String
@@ -87,7 +88,7 @@ enum ProcessManager {
                    let patched = replacingPortFlag(in: raw, with: port) {
                     // Run the raw binary directly, prepending local node_modules/.bin
                     let nodeModulesBin = "\(path)/node_modules/.bin"
-                    fullCmd = "PATH=\"\(nodeModulesBin):$PATH\" \(patched)"
+                    fullCmd = "PATH=\(bashSingleQuote(nodeModulesBin)):\"$PATH\" \(patched)"
                 } else {
                     // Fall back: inject PORT env var before the npm wrapper command.
                     fullCmd = "PORT=\(port) \(cmd)"
@@ -108,14 +109,15 @@ enum ProcessManager {
                 fullCmd = "while true; do \(wait); \(fullCmd); echo ''; echo '🔄 Redémarrage dans 3s... (Ctrl+C pour arrêter)'; sleep 3; done"
             }
 
-            let safeCmd = fullCmd.replacingOccurrences(of: "\"", with: "\\\"")
-            cd += " && \(safeCmd)"
+            bashCmd += " && \(fullCmd)"
         }
 
+        // Wrap the entire bash command as a properly-escaped AppleScript string literal
+        // (handles backslash + double quote — paths in macOS can contain both).
         let script = """
         tell application "Terminal"
             activate
-            do script "\(cd)"
+            do script \(appleScriptStringLiteral(bashCmd))
         end tell
         """
 
@@ -187,6 +189,25 @@ enum ProcessManager {
         if let appleScript = NSAppleScript(source: script) {
             appleScript.executeAndReturnError(&error)
         }
+    }
+
+    // MARK: - Shell / AppleScript escaping
+
+    /// Single-quote a string for bash, handling embedded single quotes via the
+    /// close-escape-reopen pattern: `O'Brien` → `'O'\''Brien'`. Inside single
+    /// quotes bash strips no metacharacters, so this neutralizes anything in
+    /// the path (spaces, `$`, `;`, backticks, etc.).
+    static func bashSingleQuote(_ s: String) -> String {
+        "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+
+    /// Wrap a Swift string as an AppleScript double-quoted literal. Must escape
+    /// backslash first (otherwise the second pass doubles already-escaped quotes).
+    static func appleScriptStringLiteral(_ s: String) -> String {
+        let escaped = s
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+        return "\"\(escaped)\""
     }
 
     // MARK: - Auto-restart / port wait (bash)
