@@ -116,6 +116,8 @@ enum PortScanner {
             "Xcode", "xcodebuild",
             // Cursor — extension host / MCP / internal listener (e.g. port 36240), not a dev server
             "Cursor",
+            // OrbStack — Docker/VM port forwarder; clutters the list with one entry per forwarded port
+            "OrbStack",
             // macOS system processes
             "com.apple", "launchd", "rapportd",
             "ControlCenter", "Finder", "Dock", "WindowServer",
