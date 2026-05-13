@@ -42,14 +42,26 @@ final class UpdateCheckController: ObservableObject {
 
     func openReleasePage() {
         guard let url = updateAvailable?.releasePageURL else { return }
-        NSWorkspace.shared.open(url)
+        // Defer to the next runloop tick: when triggered from the menu-bar alert,
+        // dismissing the alert in the same turn swallows the NSWorkspace.open call
+        // and the browser only launches on a second attempt.
+        DispatchQueue.main.async {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     /// Opens the release page and closes the alert (user intends to update; do not treat as "remind later").
     func openReleaseAndDismiss() {
-        openReleasePage()
+        // Capture the URL before nil-ing `updateAvailable`, then dispatch the open
+        // after the alert has dismissed so AppKit does not eat the workspace call.
+        let url = updateAvailable?.releasePageURL
         showUpdateAlert = false
         updateAvailable = nil
+        if let url {
+            DispatchQueue.main.async {
+                NSWorkspace.shared.open(url)
+            }
+        }
     }
 
     func remindLater() {
