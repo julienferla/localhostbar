@@ -18,37 +18,6 @@ enum ProcessManager {
         NSWorkspace.shared.open(url)
     }
 
-    // MARK: - Open in Cursor
-
-    /// Opens a folder in Cursor, found via bundle ID (works regardless of app name like "Cursor 2").
-    static func openInCursor(path: String) {
-        let bundleID = "com.todesktop.230313mzl4w4u92"
-
-        if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
-            NSWorkspace.shared.open(
-                [URL(fileURLWithPath: path)],
-                withApplicationAt: appURL,
-                configuration: NSWorkspace.OpenConfiguration()
-            )
-            return
-        }
-
-        // Fallback: search common paths
-        let candidatePaths = [
-            "/Applications/Cursor.app",
-            "/Applications/Cursor 2.app",
-            "\(FileManager.default.homeDirectoryForCurrentUser.path)/Applications/Cursor.app"
-        ]
-        for appPath in candidatePaths where FileManager.default.fileExists(atPath: appPath) {
-            NSWorkspace.shared.open(
-                [URL(fileURLWithPath: path)],
-                withApplicationAt: URL(fileURLWithPath: appPath),
-                configuration: NSWorkspace.OpenConfiguration()
-            )
-            return
-        }
-    }
-
     // MARK: - Open Terminal
 
     /// Opens Terminal at `path`, optionally running a command after `cd`.

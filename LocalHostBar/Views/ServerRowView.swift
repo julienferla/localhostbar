@@ -58,9 +58,6 @@ struct ServerRowView: View {
                     ProcessManager.openInBrowser(port: server.port)
                 }
                 if let path = server.workingDirectory {
-                    ActionButton(label: "Cursor", systemImage: "cursorarrow.rays") {
-                        ProcessManager.openInCursor(path: path)
-                    }
                     ActionButton(label: "Terminal", systemImage: "terminal") {
                         ProcessManager.openTerminal(at: path)
                     }

@@ -2,7 +2,7 @@
 
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-🍺_Buy_me_a_beer-EA4AAA?style=flat&logo=github-sponsors)](https://github.com/sponsors/julienferla)
 
-> A macOS menu bar app that detects, monitors, and controls your local development servers — built for [Cursor](https://cursor.sh) developers.
+> A macOS menu bar app that detects, monitors, and controls your local development servers. Editor-agnostic: works whether you launch from Terminal, Cursor, Claude Code, or anything else.
 
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift 5.9](https://img.shields.io/badge/Swift-5.9-orange) ![License MIT](https://img.shields.io/badge/license-MIT-green)
 
@@ -11,19 +11,22 @@
 ## Features
 
 - **Auto-detect** all localhost servers running on your machine (Next.js, Vite, Nuxt, Laravel, Rails, Django, Flask, Express, Vue, React…)
-- **Project identification** — reads `package.json`, `composer.json`, and filesystem markers to name and classify each server
+- **Project identification** : walks the working directory up to the nearest project marker (`package.json`, `.git`, `Cargo.toml`, `pyproject.toml`, `manage.py`, `Gemfile`, `composer.json`, `go.mod`, …) and names each server accordingly. Works the same regardless of how the server was started.
 - **One-click actions** per server:
   - 🌐 Open in browser
-  - ✏️ Open project in Cursor
   - 💻 Open Terminal at project root
   - 🔄 Restart server (auto-selects a free port)
   - ⏹ Stop server
-- **Cursor Projects** — detects projects currently open in Cursor that have no server running, with a one-click Start button
-- **Smart port management** — when starting a second server, automatically picks a free port (handles hardcoded `-p` flags in npm scripts too)
-- **Pinned projects** — pin frequently used projects to the top of the list (persisted across launches)
-- **Server history** — remembers recently active servers
-- **Notifications** — alerts when a server starts or stops
-- **Live polling** every 3 seconds — no configuration needed
+- **Smart port management** : when starting a second server, automatically picks a free port (handles hardcoded `-p` flags in npm scripts too)
+- **Pinned projects** : pin frequently used projects to the top of the list (persisted across launches)
+- **Server history** : remembers recently active servers
+- **Notifications** : alerts when a server starts or stops
+- **Live polling** every 3 seconds : no configuration needed
+
+### Optional integrations
+
+- **Cursor Projects** : if you use [Cursor](https://cursor.sh), detects projects currently open in Cursor that have no server running, with a one-click Start button.
+- **Claude Code worktrees** : if you use [Claude Code](https://claude.com/claude-code), a server launched from a `.claude/worktrees/<slug>/` directory is displayed under the real project name rather than the worktree slug.
 
 ## Installation
 
@@ -68,7 +71,7 @@ The app checks the [latest GitHub Release](https://github.com/julienferla/localh
 - **Automatic check**: at most once per app session, and only if the last check was more than **24 hours** ago.
 - **Manual check**: use the download-circle button in the popover footer.
 
-**Maintainers — keep versions in sync**
+**Maintainers, keep versions in sync**
 
 1. Bump **`MARKETING_VERSION`** / **`CURRENT_PROJECT_VERSION`** in `project.yml`, and align **`CFBundleShortVersionString`** / **`CFBundleVersion`** in `project.yml` → `info.properties` and `LocalHostBar/Info.plist`. Run `xcodegen generate`.
 2. Create a GitHub Release whose **tag** matches that version. A leading `v` is fine (e.g. app `1.2.0` ↔ tag `v1.2.0` or `1.2.0`). The checker compares numeric segments after stripping a leading `v`.
@@ -90,7 +93,7 @@ LocalHostBar/
 ├── Services/
 │   ├── PortScanner.swift         # lsof-based TCP port detection
 │   ├── ProjectDetector.swift     # package.json / filesystem framework detection
-│   ├── ProcessManager.swift      # kill, open browser, Cursor, Terminal, port logic
+│   ├── ProcessManager.swift      # kill, open browser, open Terminal, port logic
 │   ├── CursorDetector.swift      # Reads Cursor's storage.json for open projects
 │   ├── NotificationManager.swift # UserNotifications integration
 │   ├── GitHubReleaseUpdateChecker.swift  # Latest release vs app version (GitHub API)
@@ -99,7 +102,7 @@ LocalHostBar/
 └── Views/
     ├── PopoverView.swift          # Main popover layout
     ├── ServerRowView.swift        # Active server row with action buttons
-    └── CursorProjectRowView.swift # Cursor project row with Start/Both buttons
+    └── CursorProjectRowView.swift # Cursor project row with Start button
 ```
 
 ## How It Works
@@ -112,4 +115,4 @@ LocalHostBar/
 
 ## License
 
-MIT — see [LICENSE](LICENSE)
+MIT, see [LICENSE](LICENSE)
