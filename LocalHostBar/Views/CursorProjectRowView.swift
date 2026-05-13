@@ -54,16 +54,7 @@ struct CursorProjectRowView: View {
 
             // ── Actions ─────────────────────────────────────────────────
             HStack(spacing: 5) {
-                // Open in Cursor (focus existing window or open project)
-                CursorActionButton(
-                    label: "Cursor",
-                    systemImage: "cursorarrow.rays"
-                ) {
-                    ProcessManager.openInCursor(path: project.path)
-                }
-                .help("Open project in Cursor")
-
-                // Start — always visible; runs detected command or just opens terminal.
+                // Start: runs detected command or just opens terminal.
                 // autoPort=true injects PORT=<free> so a second server doesn't collide.
                 let cmd = project.launchCommand
                 let rawScript = project.rawLaunchScript
@@ -85,29 +76,6 @@ struct CursorProjectRowView: View {
                     )
                 }
                 .help(cmd.map { "Run: \($0) (port auto-selected)" } ?? "Open terminal in project")
-
-                // Both — always visible
-                CursorActionButton(
-                    label: "Both",
-                    systemImage: "arrow.triangle.branch",
-                    tint: .accentColor
-                ) {
-                    let occupied = Set(service.servers.map(\.port))
-                    let ar = service.isAutoRestart(project.path)
-                    ProcessManager.openInCursor(path: project.path)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        ProcessManager.openTerminal(
-                            at: project.path,
-                            command: cmd,
-                            rawLaunchScript: rawScript,
-                            autoPort: cmd != nil,
-                            autoRestart: ar,
-                            occupiedPorts: occupied,
-                            framework: project.framework
-                        )
-                    }
-                }
-                .help("Open in Cursor + \(cmd.map { "run: \($0) (port auto)" } ?? "open terminal")")
             }
         }
         .padding(.vertical, 8)

@@ -17,21 +17,24 @@ enum ProjectDetector {
     // MARK: - Private
 
     private static func detectName(at url: URL, fm: FileManager) -> String {
-        // Resolve to the canonical project path. Claude Code worktrees live at
-        // `<project>/.claude/worktrees/<slug>[/subpath]`, and lsof reports the
-        // worktree path as cwd — without stripping, the displayed name becomes
-        // the worktree slug ("distracted-road-412d36") instead of the project.
+        // 1. Strip `.claude/worktrees/<slug>` if present (Claude Code worktrees).
         let canonical = canonicalProjectURL(url)
-        let last = canonical.lastPathComponent
 
-        // Monorepo subfolders ("frontend", "backend", …) carry no identifying
-        // info on their own. Prepend the parent so the row reads "myrepo/frontend".
+        // 2. Walk up to the nearest project root marker (package.json, .git, Cargo.toml, …).
+        //    A dev server launched from `monorepo/apps/frontend/src` resolves to
+        //    `monorepo/apps/frontend` instead of "src". Works the same for any
+        //    launcher (Terminal, Cursor, Claude Code, …) since detection is cwd-based.
+        let root = projectRootURL(canonical, fm: fm)
+        let last = root.lastPathComponent
+
+        // 3. Monorepo subfolders ("frontend", "backend", …) carry no identifying
+        //    info on their own. Prepend the parent so the row reads "myrepo/frontend".
         let generic: Set<String> = [
             "frontend", "backend", "api", "web", "app", "apps",
             "client", "server", "src", "packages", "site", "www",
         ]
         if generic.contains(last.lowercased()) {
-            let parent = canonical.deletingLastPathComponent().lastPathComponent
+            let parent = root.deletingLastPathComponent().lastPathComponent
             if !parent.isEmpty && parent != "/" {
                 return "\(parent)/\(last)"
             }
@@ -57,6 +60,36 @@ enum ProjectDetector {
 
         let resolved = subpath.isEmpty ? beforeClaude : "\(beforeClaude)/\(subpath)"
         return URL(fileURLWithPath: resolved)
+    }
+
+    /// Walks up the directory tree starting from `url` and returns the deepest
+    /// ancestor that contains a project root marker (package.json, .git, Cargo.toml,
+    /// pyproject.toml, manage.py, Gemfile, composer.json, artisan, go.mod). In a
+    /// monorepo this surfaces the subpackage rather than the repo root, which
+    /// matches what dev-server commands actually launch. If no marker is found
+    /// up to `/`, returns `url` unchanged so the legacy lastPathComponent applies.
+    private static func projectRootURL(_ url: URL, fm: FileManager) -> URL {
+        let markers = [
+            "package.json", ".git", "Cargo.toml", "go.mod",
+            "pyproject.toml", "manage.py", "app.py",
+            "composer.json", "artisan", "Gemfile",
+        ]
+        var current = url
+        // Stop at `/` (current.path == "/") or once we've climbed past $HOME's parent —
+        // dev projects always live below $HOME, so bounding the walk avoids syscalls
+        // probing system directories.
+        let homeDepth = fm.homeDirectoryForCurrentUser.pathComponents.count
+        while current.pathComponents.count > max(1, homeDepth - 1) {
+            for marker in markers {
+                if fm.fileExists(atPath: current.appendingPathComponent(marker).path) {
+                    return current
+                }
+            }
+            let parent = current.deletingLastPathComponent()
+            if parent == current { break }  // safety: defensive against URL idempotence
+            current = parent
+        }
+        return url
     }
 
     private static func detectFramework(at url: URL, fm: FileManager) -> ProjectInfo.Framework {
