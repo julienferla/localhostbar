@@ -23,6 +23,23 @@
 - **Notifications** — alerts when a server starts or stops
 - **Live polling** every 3 seconds — no configuration needed
 
+## Installation
+
+Download `LocalHostBar-<version>.dmg` from the [latest release](https://github.com/julienferla/localhostbar/releases/latest), open it, then drag **LocalHostBar.app** into the **Applications** folder.
+
+### First launch: macOS Gatekeeper bypass
+
+LocalHostBar is ad-hoc signed (no paid Apple Developer ID, so no notarization). On first launch, macOS shows a warning saying the app "cannot be opened" or suggesting to move it to the Trash. This is expected. To allow it:
+
+1. Open **System Settings → Privacy & Security** (Réglages Système → Confidentialité et sécurité)
+2. Scroll to the **Security** section
+3. Next to the LocalHostBar block, click **Open Anyway** (Ouvrir quand même). The button is visible for about an hour after the first launch attempt.
+4. Enter your login password and confirm.
+
+macOS remembers your choice; subsequent launches won't be blocked.
+
+Prefer to build from source instead? See [Getting Started](#getting-started).
+
 ## Requirements
 
 - macOS 14.0 (Sonoma) or later
@@ -53,7 +70,7 @@ The app checks the [latest GitHub Release](https://github.com/julienferla/localh
 
 1. Bump **`MARKETING_VERSION`** / **`CURRENT_PROJECT_VERSION`** in `project.yml`, and align **`CFBundleShortVersionString`** / **`CFBundleVersion`** in `project.yml` → `info.properties` and `LocalHostBar/Info.plist`. Run `xcodegen generate`.
 2. Create a GitHub Release whose **tag** matches that version. A leading `v` is fine (e.g. app `1.2.0` ↔ tag `v1.2.0` or `1.2.0`). The checker compares numeric segments after stripping a leading `v`.
-3. **DMG on publish**: when you **publish** a release, the workflow [`.github/workflows/release-dmg.yml`](.github/workflows/release-dmg.yml) builds on `macos-14` and uploads **`LocalHostBar-<version>.dmg`** to that release (tag `v1.2.0` → file `LocalHostBar-1.2.0.dmg`). No manual upload needed if CI succeeds.
+3. **DMG on publish**: when you **publish** a release, the workflow [`.github/workflows/release-dmg.yml`](.github/workflows/release-dmg.yml) builds on `macos-15` (Xcode 16+) and uploads **`LocalHostBar-<version>.dmg`** to that release (tag `v1.2.0` → file `LocalHostBar-1.2.0.dmg`). The DMG is generated with [`create-dmg`](https://github.com/create-dmg/create-dmg) and ships the standard drag-to-install layout (app icon + Applications alias). No manual upload needed if CI succeeds.
 4. **Local build**: `make dmg` (requires Xcode + XcodeGen) writes `dist/LocalHostBar-<marketing-version>.dmg` for manual upload or testing.
 
 If the tag version is greater than the running app’s marketing version, users see an update prompt.
